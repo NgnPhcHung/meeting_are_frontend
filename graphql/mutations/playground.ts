@@ -28,3 +28,12 @@ export const UPDATE_PLAYER_POSITION_MUTATION = gql`
   }
   ${PLAYER_FIELDS}
 `;
+
+export const DISCONNECT_USER = gql`
+  mutation DisconnectUser {
+    disconnectUser {
+      ...PlayerFields
+    }
+  }
+  ${PLAYER_FIELDS}
+`;

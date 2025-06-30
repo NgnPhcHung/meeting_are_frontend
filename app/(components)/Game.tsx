@@ -2,11 +2,13 @@
 
 import { setupPixi } from "@/game/initGame";
 import {
+  DISCONNECT_USER,
   UPDATE_PLAYER_POSITION_MUTATION,
   USER_JOIN_MUTATION,
 } from "@/graphql/mutations/playground";
 import { LIST_PLAYER } from "@/graphql/queries/playground";
 import {
+  USER_DISCONNECT_SUBSCRIPTION,
   USER_JOINED_SUBSCRIPTION,
   USER_MOVE_SUBSCRIPTION,
 } from "@/graphql/subscription/playground";
@@ -14,6 +16,7 @@ import { getMeClient } from "@/utils/getMeClient";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserPlayground } from "./model/playgroundModel";
+import { Button } from "antd";
 
 interface UserJoinedSubscriptionData {
   userJoined: UserPlayground;
@@ -32,6 +35,7 @@ export default function Game() {
   const [players, setPlayers] = useState<UserPlayground[]>();
   const [userJoinPlayground] = useMutation(USER_JOIN_MUTATION);
   const [updatePlayerPosition] = useMutation(UPDATE_PLAYER_POSITION_MUTATION);
+  const [disconnectUser] = useMutation(DISCONNECT_USER);
 
   useSubscription<UserJoinedSubscriptionData>(USER_JOINED_SUBSCRIPTION, {
     onData: ({ data: { data } }) => {
@@ -49,10 +53,32 @@ export default function Game() {
     },
   });
 
+  useSubscription(USER_DISCONNECT_SUBSCRIPTION, {
+    onData: ({ data: { data } }) => {
+      console.log(data);
+
+      if (data && data.userDisconnected) {
+        const disconnectedUserId = data.userDisconnected.userId;
+        console.log(`Player ${disconnectedUserId} has disconnected.`);
+
+        setPlayers((prevPlayers) =>
+          prevPlayers?.filter((p) => p.userId !== disconnectedUserId),
+        );
+
+        pixiRef.current?.removePlayer(disconnectedUserId);
+      }
+    },
+    onError: (err) => {
+      console.error(
+        "GraphQL Subscription (User Disconnect) error:",
+        err.message,
+      );
+    },
+  });
+
   useSubscription(USER_MOVE_SUBSCRIPTION, {
     onData: ({ data }) => {
       const movedPlayer = data.data?.userMoved;
-      console.log(data);
 
       if (movedPlayer) {
         setPlayers((prev) =>
@@ -85,8 +111,6 @@ export default function Game() {
   useEffect(() => {
     const doJoin = async () => {
       try {
-        console.log(user.id);
-
         const res = await userJoinPlayground({
           variables: { userId: user.id },
         });
@@ -134,6 +158,8 @@ export default function Game() {
 
     return () => {
       el.removeEventListener("keydown", handleKey);
+
+      // disconnectUser();
     };
   }, []);
 
@@ -181,11 +207,14 @@ export default function Game() {
   );
 
   return (
-    <div
-      tabIndex={0}
-      ref={containerRef}
-      className="w-[calc(100vw-6rem)] h-[calc(100vh-4rem)] rounded-2xl ring-offset-0 ring-0 outline-0"
-      id="game-container"
-    />
+    <>
+      <Button onClick={() => disconnectUser()}>Disconnect</Button>
+      <div
+        tabIndex={0}
+        ref={containerRef}
+        className="w-[calc(100vw-6rem)] h-[calc(100vh-4rem)] rounded-2xl ring-offset-0 ring-0 outline-0"
+        id="game-container"
+      />
+    </>
   );
 }

@@ -25,8 +25,6 @@ export const setupPixi = async (
   const sprites: Record<string, Sprite> = {};
 
   for (const player of players) {
-    console.log("player", player);
-
     const img = new Image();
     img.src = player.avatarImg;
     await new Promise((r) => (img.onload = r));

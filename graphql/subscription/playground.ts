@@ -19,3 +19,15 @@ export const USER_MOVE_SUBSCRIPTION = gql`
     }
   }
 `;
+
+export const USER_DISCONNECT_SUBSCRIPTION = gql`
+  subscription UserDisconnect {
+    userDisconnected {
+      userId
+      position {
+        x
+        y
+      }
+    }
+  }
+`;
