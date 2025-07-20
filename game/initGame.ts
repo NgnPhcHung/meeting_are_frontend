@@ -38,6 +38,8 @@ export const setupPixi = async (
 
   return {
     updatePlayerPosition(id: string, x: number, y: number) {
+      console.log("update player position", id, x, y);
+
       if (sprites[id]) {
         sprites[id].x = x;
         sprites[id].y = y;

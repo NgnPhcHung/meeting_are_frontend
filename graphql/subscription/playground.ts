@@ -1,9 +1,25 @@
 import { gql } from "@apollo/client";
 
+const PLAYER_FIELDS = gql`
+  fragment PlayerFields on Player {
+    userId
+    avatarImg
+    position {
+      x
+      y
+    }
+  }
+`;
+
 export const USER_JOINED_SUBSCRIPTION = gql`
-  subscription UserJoined {
+  subscription join {
     userJoined {
       userId
+      position {
+        x
+        y
+      }
+      avatarImg
     }
   }
 `;

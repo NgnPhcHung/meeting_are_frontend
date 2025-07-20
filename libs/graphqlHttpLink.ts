@@ -1,4 +1,4 @@
-import { ApolloLink, HttpLink } from "@apollo/client";
+import { HttpLink } from "@apollo/client";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 
@@ -11,16 +11,16 @@ export const graphqlHttpLink = new HttpLink({
   credentials: "include",
 });
 
-export const graphqlWs = new GraphQLWsLink(
+export const graphqlWsLink = new GraphQLWsLink(
   createClient({
     url: "ws://localhost:3001/graphql",
+    on: {
+      error: (err) => {
+        console.error("GraphQL WS Client error:", err);
+      },
+      opened: () => {
+        console.log("WebSocket connection opened");
+      },
+    },
   }),
 );
-let wsLink: ApolloLink;
-
-if (typeof window !== "undefined") {
-  wsLink = graphqlWs as unknown as ApolloLink;
-} else {
-  wsLink = graphqlHttpLink as ApolloLink;
-}
-export default wsLink;

@@ -10,7 +10,7 @@ import {
 import { setContext } from "@apollo/client/link/context";
 import { PropsWithChildren } from "react";
 import { graphQLError } from "./graphqlError";
-import wsLink, { graphqlHttpLink } from "./graphqlHttpLink";
+import { graphqlHttpLink, graphqlWsLink } from "./graphqlHttpLink";
 import { getMainDefinition } from "@apollo/client/utilities";
 
 function makeClient(token?: string) {
@@ -22,30 +22,32 @@ function makeClient(token?: string) {
       },
     };
   });
-  const link =
-    typeof window === "undefined"
-      ? ApolloLink.from([
-          new SSRMultipartLink({
-            stripDefer: true,
-          }),
-          authLink,
+  const isBrowser = typeof window !== "undefined";
+
+  const commonLinks = [authLink, graphQLError];
+
+  const link = isBrowser
+    ? ApolloLink.from([
+        ...commonLinks,
+        split(
+          ({ query }) => {
+            const definition = getMainDefinition(query);
+            return (
+              definition.kind === "OperationDefinition" &&
+              definition.operation === "subscription"
+            );
+          },
+
+          graphqlWsLink,
           graphqlHttpLink,
-        ])
-      : ApolloLink.from([
-          graphQLError,
-          authLink,
-          split(
-            ({ query }) => {
-              const definition = getMainDefinition(query);
-              return (
-                definition.kind === "OperationDefinition" &&
-                definition.operation === "subscription"
-              );
-            },
-            wsLink,
-            graphqlHttpLink,
-          ),
-        ]);
+        ),
+      ])
+    : ApolloLink.from([
+        ...commonLinks,
+        new SSRMultipartLink({ stripDefer: true }),
+        graphqlWsLink,
+        graphqlHttpLink,
+      ]);
 
   return new ApolloClient({
     cache: new InMemoryCache(),

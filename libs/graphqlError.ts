@@ -3,11 +3,12 @@ import {
   GraphqlCustomError,
   NetworkOperationError,
 } from "@/types/graphql";
-import { setAuthCookie } from "@/utils/setAuthCookie";
+import { setCookie } from "@/utils/setAuthCookie";
 import {
   ApolloClient,
   FetchResult,
   gql,
+  HttpLink,
   InMemoryCache,
   Observable,
 } from "@apollo/client";
@@ -30,8 +31,15 @@ const REFRESH_TOKEN_MUTATION = gql`
 `;
 
 const createRefreshClient = () => {
+  const httpLink = new HttpLink({
+    uri: process.env.APP_URL || "http://localhost:3001/graphql",
+    fetchOptions: {
+      credentials: "include",
+    },
+    credentials: "include",
+  });
   return new ApolloClient({
-    uri: process.env.APP_URL,
+    link: httpLink,
     cache: new InMemoryCache(),
     credentials: "include",
     defaultOptions: {
@@ -48,6 +56,7 @@ const createRefreshClient = () => {
 export const graphQLError = onError(
   ({ graphQLErrors, networkError, operation, forward }) => {
     let finalErrorToPropagate: Error | null = null;
+
     if (graphQLErrors) {
       for (let err of graphQLErrors) {
         const extensions = err.extensions as GraphQLExtensions | undefined;
@@ -64,6 +73,7 @@ export const graphQLError = onError(
             });
           }
           isRefreshing = true;
+
           return new Observable((observer) => {
             const refreshClient = createRefreshClient();
 
@@ -73,15 +83,19 @@ export const graphQLError = onError(
                 const newAccessToken =
                   response.data?.refreshAccessToken?.accessToken;
                 if (newAccessToken) {
-                  setAuthCookie("authorization", newAccessToken, FIFTEEN_MINS);
-                  isRefreshing = false;
-                  resolvePendingRequests();
+                  setCookie(
+                    "authorization",
+                    `Bearer ${newAccessToken}`,
+                    FIFTEEN_MINS,
+                  );
                   operation.setContext(({ headers = {} }) => ({
                     headers: {
                       ...headers,
-                      authorization: newAccessToken,
+                      authorization: `Bearer ${newAccessToken}`,
                     },
                   }));
+                  isRefreshing = false;
+                  resolvePendingRequests();
                   forward(operation).subscribe(observer);
                 } else {
                   console.error(
