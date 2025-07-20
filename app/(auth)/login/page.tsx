@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   return (
     <Flex gap="middle" vertical align="center" justify="center">
-      <Form onFinish={handleSubmit} form={form}>
+      <Form onFinish={handleSubmit} form={form} autoFocus>
         <Form.Item
           label="Username"
           name="username"
