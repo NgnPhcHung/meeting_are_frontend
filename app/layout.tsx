@@ -1,10 +1,10 @@
+import { ApolloWrapper } from "@/libs/apolloWrapper";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AntdRegistry } from "@ant-design/nextjs-registry";
-import "./globals.css";
-import { ThemeProvider } from "./(components)/ThemeProvider";
-import { ApolloWrapper } from "@/libs/apolloWrapper";
 import { cookies } from "next/headers";
+import { ThemeProvider } from "./(components)/ThemeProvider";
+import "./globals.css";
 
 const inter = Inter({
   weight: ["400", "500", "600", "700", "800", "900"],

@@ -13,22 +13,23 @@ import { graphQLError } from "./graphqlError";
 import { graphqlHttpLink, graphqlWsLink } from "./graphqlHttpLink";
 import { getMainDefinition } from "@apollo/client/utilities";
 
-function makeClient(token?: string) {
-  const authLink = setContext((_, { headers }) => {
-    return {
-      headers: {
-        ...headers,
-        authorization: token ? token : "",
-      },
-    };
-  });
-  const isBrowser = typeof window !== "undefined";
+function makeClient({ token }: { token?: string }) {
+  const authLink = setContext((_, { headers }) => ({
+    headers: {
+      ...headers,
+      authorization: token ? token : "",
+    },
+    cookie: {
+      authorization: token ? token : "",
+    },
+  }));
 
-  const commonLinks = [authLink, graphQLError];
+  const isBrowser = typeof window !== "undefined";
 
   const link = isBrowser
     ? ApolloLink.from([
-        ...commonLinks,
+        authLink,
+        graphQLError,
         split(
           ({ query }) => {
             const definition = getMainDefinition(query);
@@ -37,15 +38,14 @@ function makeClient(token?: string) {
               definition.operation === "subscription"
             );
           },
-
           graphqlWsLink,
           graphqlHttpLink,
         ),
       ])
     : ApolloLink.from([
-        ...commonLinks,
+        authLink,
+        graphQLError,
         new SSRMultipartLink({ stripDefer: true }),
-        graphqlWsLink,
         graphqlHttpLink,
       ]);
 
@@ -60,7 +60,7 @@ interface IApolloWrapper extends PropsWithChildren {
 }
 export function ApolloWrapper({ children, token }: IApolloWrapper) {
   return (
-    <ApolloNextAppProvider makeClient={() => makeClient(token)}>
+    <ApolloNextAppProvider makeClient={() => makeClient({ token })}>
       {children}
     </ApolloNextAppProvider>
   );

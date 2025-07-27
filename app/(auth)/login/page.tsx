@@ -1,19 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button, Checkbox, Flex, Form, Input, message } from "antd";
-import { userLogin } from "@/graphql/mutations/auth";
+import { Button, Checkbox, Flex, Form, Input, InputRef, message } from "antd";
 import { LoginDto } from "@/dtos";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { userLogin } from "@/actions/auth";
 
 type LoginForm = LoginDto & { remember?: boolean };
 
 export default function LoginPage() {
   const router = useRouter();
   const [form] = Form.useForm<LoginForm>();
+  const inputRef = useRef<InputRef>(null);
 
   useEffect(() => {
     const loginData = localStorage.getItem("user_login");
+
     if (loginData) {
       form.setFieldsValue(JSON.parse(loginData) as LoginDto);
     }
@@ -21,6 +23,14 @@ export default function LoginPage() {
       return;
     };
   }, []);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus({
+        cursor: "start",
+      });
+    }
+  }, [inputRef]);
 
   const handleSubmit = async (formData: LoginForm) => {
     try {
@@ -43,13 +53,13 @@ export default function LoginPage() {
 
   return (
     <Flex gap="middle" vertical align="center" justify="center">
-      <Form onFinish={handleSubmit} form={form} autoFocus>
+      <Form onFinish={handleSubmit} form={form}>
         <Form.Item
           label="Username"
           name="username"
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input autoFocus tabIndex={0} />
         </Form.Item>
         <Form.Item
           label="Password"

@@ -1,34 +1,49 @@
 "use client";
 
+import { createRoom } from "@/actions/room";
+import { RoomList } from "@/app/(components)/room/RoomList";
 import { Selection } from "@/app/(components)/Selection";
-import { UserStorage } from "@/types/userStorage";
-import { gql, useQuery } from "@apollo/client";
-import { Spin } from "antd";
-import { useEffect } from "react";
-
-const userQuery = gql`
-  query getMe {
-    getMe {
-      id
-      email
-      name
-      role
-    }
-  }
-`;
+import { CreateRoomDto } from "@/dtos/createRoomDto";
+import { GET_LIST_ROOMS } from "@/graphql/queries/room";
+import { useQuery } from "@apollo/client";
+import { Button, Form, Input, message } from "antd";
 
 export default function SelectionPage() {
-  const { data, loading, error } = useQuery<{ getMe: UserStorage }>(userQuery);
-
-  useEffect(() => {
-    if (data?.getMe) localStorage.setItem("user", JSON.stringify(data.getMe));
-    if (error) {
-      console.log(error);
+  const [form] = Form.useForm<CreateRoomDto>();
+  const { refetch } = useQuery(GET_LIST_ROOMS, {
+    skip: true,
+  });
+  const handleSubmit = async (formData: CreateRoomDto) => {
+    try {
+      const result = await createRoom({
+        roomName: formData.roomName,
+      });
+      if (result.success) {
+        message.success("Room created!");
+        refetch();
+      }
+    } catch (error) {
+      message.error((error as Error).message);
     }
-  }, [data, error]);
-
-  if (loading) {
-    return <Spin />;
-  }
-  return <Selection />;
+  };
+  return (
+    <div className="">
+      <Form onFinish={handleSubmit} form={form}>
+        <Form.Item
+          label="Room Name"
+          name="roomName"
+          rules={[{ required: true }]}
+        >
+          <Input autoFocus tabIndex={0} />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            Create
+          </Button>
+        </Form.Item>
+      </Form>
+      <RoomList />
+      <Selection />
+    </div>
+  );
 }

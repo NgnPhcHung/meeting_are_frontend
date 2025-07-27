@@ -5,3 +5,7 @@ export interface RenewAccesseToken {
 export interface AuthResponse extends RenewAccesseToken {
   refreshToken: string;
 }
+
+export interface RefreshAccessToken {
+  refreshAccessToken: RenewAccesseToken;
+}

@@ -12,8 +12,8 @@ const PLAYER_FIELDS = gql`
 `;
 
 export const USER_JOIN_MUTATION = gql`
-  mutation UserJoinPlayground($userId: Int!) {
-    userJoinPlayground(userId: $userId) {
+  mutation UserJoinPlayground($userId: Int!, $roomName: String!) {
+    userJoinPlayground(userId: $userId, roomName: $roomName) {
       ...PlayerFields
     }
   }

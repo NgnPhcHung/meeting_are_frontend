@@ -10,7 +10,6 @@ import { getMeClient } from "@/utils/getMeClient";
 import { useQuery, useMutation, useSubscription } from "@apollo/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UserPlayground } from "./model/playgroundModel";
-import { Spin } from "antd";
 import {
   USER_JOINED_SUBSCRIPTION,
   USER_DISCONNECT_SUBSCRIPTION,
@@ -21,8 +20,11 @@ import io, { Socket } from "socket.io-client";
 interface UserJoinedSubscriptionData {
   userJoined: UserPlayground;
 }
+interface Props {
+  roomName: string;
+}
 
-export default function Game() {
+export default function Game({ roomName }: Props) {
   const user = getMeClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const playerPosRef = useRef<{ x: number; y: number }>({ x: 100, y: 100 });
@@ -39,21 +41,22 @@ export default function Game() {
   } = useQuery<{
     players: UserPlayground[];
   }>(LIST_PLAYER, {
+    variables: { roomName },
     onError: (err) => {
       console.error("LIST_PLAYER query error:", err);
     },
   });
 
   const [userJoinPlayground] = useMutation(USER_JOIN_MUTATION, {
+    variables: { roomName },
     errorPolicy: "all",
   });
   const [disconnectUser] = useMutation(DISCONNECT_USER);
 
-  // Initialize Socket.IO
   useEffect(() => {
     const socketIo = io("http://localhost:3001", {
       path: "/socket.io/",
-      query: { userId: user.id.toString() },
+      query: { userId: user.id.toString(), roomName },
       transports: ["websocket"],
       withCredentials: true,
     });
@@ -61,12 +64,16 @@ export default function Game() {
     socketIo.on("connect", () => {
       console.log("Socket.IO connected:", socketIo.id);
       setIsSocketReady(true);
+      socketIo.emit("join_room", { roomName });
+    });
+
+    socketIo.on("player_joined", (data: { userId: number }) => {
+      console.log(`Player ${data.userId} joined room ${roomName}`);
     });
 
     socketIo.on(
       "moved",
       (data: { userId: number; position: { x: number; y: number } }) => {
-        console.log("Received moved event:", data);
         setPlayers((prev) =>
           prev?.map((player) =>
             player.userId === data.userId
@@ -83,17 +90,16 @@ export default function Game() {
     );
 
     socketIo.on("player_left", (data: { userId: number }) => {
-      console.log("Received player_left event:", data);
       setPlayers((prev) => prev?.filter((p) => p.userId !== data.userId));
       pixiRef.current?.removePlayer(data.userId);
     });
 
     socketIo.on("error", (error: { message: string }) => {
-      console.error("Socket.IO error:", error.message);
+      console.error("Socket error:", error.message);
     });
 
     socketIo.on("connect_error", (err) => {
-      console.error("Socket.IO connect_error:", err.message);
+      console.error("Socket connect error:", err);
       setIsSocketReady(false);
     });
 
@@ -107,9 +113,8 @@ export default function Game() {
     return () => {
       socketIo.disconnect();
     };
-  }, [user.id]);
+  }, [user.id, roomName]);
 
-  // Handle user join
   useEffect(() => {
     const doJoin = async () => {
       if (!containerRef.current || dataPlayersLoading || dataPlayersError) {
@@ -125,20 +130,9 @@ export default function Game() {
       }
 
       try {
-        console.log("Attempting to join with user ID:", user.id);
         const res = await userJoinPlayground({
           variables: { userId: user.id },
-          context: {
-            headers: {
-              // Authorization: `Bearer ${token}`,
-            },
-          },
         });
-        console.log(
-          "User join mutation response:",
-          JSON.stringify(res, null, 2),
-        );
-
         if (res?.data?.userJoinPlayground) {
           const joinedUser: UserPlayground = res.data.userJoinPlayground;
           const {
@@ -146,7 +140,6 @@ export default function Game() {
           } = joinedUser;
           pixiRef.current?.updatePlayerPosition(user.id, x, y);
 
-          // Ensure players is defined before calling setupPixi
           const playersList = dataPlayers?.players || [];
           if (containerRef.current) {
             const pixiInstance = await setupPixi(
@@ -173,7 +166,6 @@ export default function Game() {
     user.id,
   ]);
 
-  // Handle keyboard input for movement
   const move = useCallback(
     (x: number, y: number) => {
       const gameSpace = document.getElementById("game-container");
@@ -196,6 +188,7 @@ export default function Game() {
           userId: user.id,
           position: { x: dx, y: dy },
           avatarImg,
+          roomName,
         });
         playerPosRef.current = { x: dx, y: dy };
         pixiRef.current?.updatePlayerPosition(user.id, dx, dy);
@@ -206,7 +199,7 @@ export default function Game() {
         );
       }
     },
-    [socket, isSocketReady, user.id, players],
+    [socket, isSocketReady, user.id, players, roomName],
   );
 
   useEffect(() => {
@@ -230,7 +223,6 @@ export default function Game() {
     };
   }, [move]);
 
-  // Update players from query data
   useEffect(() => {
     if (dataPlayers?.players) {
       const foundMe = dataPlayers.players.find((p) => p.userId === user.id);
@@ -244,13 +236,8 @@ export default function Game() {
     }
   }, [dataPlayers?.players, user.id]);
 
-  // Handle user joined subscription
   useSubscription<UserJoinedSubscriptionData>(USER_JOINED_SUBSCRIPTION, {
     onData: ({ data: { data } }) => {
-      console.log(
-        "USER_JOINED subscription data:",
-        JSON.stringify(data, null, 2),
-      );
       if (data && data.userJoined) {
         setJoinedAppUsers((prev) => {
           if (!prev.includes(data.userJoined.userId)) {
@@ -278,7 +265,6 @@ export default function Game() {
     },
   });
 
-  // Handle user disconnected subscription
   useSubscription(USER_DISCONNECT_SUBSCRIPTION, {
     onData: ({ data: { data } }) => {
       if (data && data.userDisconnected) {
@@ -294,7 +280,6 @@ export default function Game() {
     },
   });
 
-  // Handle user moved subscription
   useSubscription(USER_MOVE_SUBSCRIPTION, {
     onData: ({ data }) => {
       const movedPlayer = data.data?.userMoved;
@@ -327,25 +312,11 @@ export default function Game() {
   });
 
   return (
-    <>
-      <div
-        tabIndex={1}
-        ref={containerRef}
-        className="w-[calc(100vw-6rem)] h-[calc(100vh-4rem)] rounded-2xl ring-offset-0 ring-0 outline-0"
-        id="game-container"
-      >
-        {/* {(dataPlayersLoading || dataPlayersError) && ( */}
-        {/*   <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10"> */}
-        {/*     <Spin */}
-        {/*       tip={ */}
-        {/*         dataPlayersError */}
-        {/*           ? "Error loading players" */}
-        {/*           : "Loading players..." */}
-        {/*       } */}
-        {/*     /> */}
-        {/*   </div> */}
-        {/* )} */}
-      </div>
-    </>
+    <div
+      tabIndex={1}
+      ref={containerRef}
+      className="w-[calc(100vw-6rem)] h-[calc(100vh-4rem)] rounded-2xl ring-offset-0 ring-0 outline-0"
+      id="game-container"
+    ></div>
   );
 }

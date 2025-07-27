@@ -4,11 +4,11 @@ import { createClient } from "graphql-ws";
 
 export const graphqlHttpLink = new HttpLink({
   uri: "http://localhost:3001/graphql",
+  credentials: "include",
   fetchOptions: {
     cache: "no-store",
     credentials: "include",
   },
-  credentials: "include",
 });
 
 export const graphqlWsLink = new GraphQLWsLink(

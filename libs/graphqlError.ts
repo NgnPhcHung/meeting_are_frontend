@@ -1,3 +1,5 @@
+import { REFRESH_TOKEN_MUTATION } from "@/graphql/mutations/auth";
+import { RefreshAccessToken } from "@/types/authResponse";
 import {
   GraphQLExtensions,
   GraphqlCustomError,
@@ -7,7 +9,6 @@ import { setCookie } from "@/utils/setAuthCookie";
 import {
   ApolloClient,
   FetchResult,
-  gql,
   HttpLink,
   InMemoryCache,
   Observable,
@@ -22,13 +23,6 @@ function resolvePendingRequests(): void {
   pendingRequests.forEach((resolve) => resolve(undefined));
   pendingRequests = [];
 }
-const REFRESH_TOKEN_MUTATION = gql`
-  mutation RefreshAccessToken {
-    refreshAccessToken {
-      accessToken
-    }
-  }
-`;
 
 const createRefreshClient = () => {
   const httpLink = new HttpLink({
@@ -65,45 +59,50 @@ export const graphQLError = onError(
         const isAuthError = extensions?.exception?.statusCode === 401;
 
         if (isAuthError) {
-          if (isRefreshing) {
-            return new Observable((observer) => {
-              pendingRequests.push(() => {
-                forward(operation).subscribe(observer);
-              });
-            });
-          }
-          isRefreshing = true;
-
-          return new Observable((observer) => {
-            const refreshClient = createRefreshClient();
-
-            refreshClient
-              .mutate({ mutation: REFRESH_TOKEN_MUTATION })
-              .then((response: FetchResult) => {
-                const newAccessToken =
-                  response.data?.refreshAccessToken?.accessToken;
-                if (newAccessToken) {
-                  setCookie(
-                    "authorization",
-                    `Bearer ${newAccessToken}`,
-                    FIFTEEN_MINS,
-                  );
-                  operation.setContext(({ headers = {} }) => ({
-                    headers: {
-                      ...headers,
-                      authorization: `Bearer ${newAccessToken}`,
-                    },
-                  }));
-                  isRefreshing = false;
-                  resolvePendingRequests();
-                  forward(operation).subscribe(observer);
-                } else {
-                  console.error(
-                    "Token refresh succeeded, but no new access token received. Redirecting to login.",
-                  );
-                }
-              });
-          });
+          // if (isRefreshing) {
+          //   return new Observable((observer) => {
+          //     pendingRequests.push(() => {
+          //       forward(operation).subscribe(observer);
+          //     });
+          //   });
+          // }
+          // isRefreshing = true;
+          //
+          // return new Observable((observer) => {
+          //   const refreshClient = createRefreshClient();
+          //
+          //   refreshClient
+          //     .mutate({ mutation: REFRESH_TOKEN_MUTATION })
+          //     .then((response: FetchResult<RefreshAccessToken>) => {
+          //       const newAccessToken =
+          //         response.data?.refreshAccessToken?.accessToken;
+          //       console.log(
+          //         "resfresh access",
+          //         response.data?.refreshAccessToken,
+          //       );
+          //
+          //       if (newAccessToken) {
+          //         setCookie(
+          //           "authorization",
+          //           `Bearer ${newAccessToken}`,
+          //           FIFTEEN_MINS,
+          //         );
+          //         operation.setContext(({ headers = {} }) => ({
+          //           headers: {
+          //             ...headers,
+          //             authorization: `Bearer ${newAccessToken}`,
+          //           },
+          //         }));
+          //         isRefreshing = false;
+          //         resolvePendingRequests();
+          //         forward(operation).subscribe(observer);
+          //       } else {
+          //         console.error(
+          //           "Token refresh succeeded, but no new access token received. Redirecting to login.",
+          //         );
+          //       }
+          //     });
+          // });
         }
 
         if (innerServerExceptionDetails) {
