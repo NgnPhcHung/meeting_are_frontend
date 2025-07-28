@@ -17,3 +17,12 @@ export const CREATE_ROOM = gql`
   }
   ${ROOM_FIELDS}
 `;
+
+export const UPDATE_ROOM = gql`
+  mutation Room($input: UpdateRoomDto!) {
+    updateRoom(input: $input) {
+      ...RoomFields
+    }
+  }
+  ${ROOM_FIELDS}
+`;

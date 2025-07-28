@@ -8,3 +8,8 @@ export interface RoomResponse {
 export interface RoomQueries {
   getListRooms: RoomResponse[];
 }
+
+export interface RoomMutation {
+  createRoom: RoomResponse;
+  updateRoom: RoomResponse;
+}
