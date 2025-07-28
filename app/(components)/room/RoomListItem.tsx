@@ -1,14 +1,13 @@
 import { RoomResponse } from "@/types/room";
-import { Card, Space } from "antd";
+import { Space } from "antd";
 import { useRouter } from "next/navigation";
-
+import { ToggleableText } from "../ToggleableText";
 export const RoomListItem = ({ participants, roomName, id }: RoomResponse) => {
   const router = useRouter();
 
   const handleRoomClicked = () => {
     router.push(`/playground/${id}`);
   };
-
   return (
     <Space
       direction="vertical"
@@ -16,9 +15,7 @@ export const RoomListItem = ({ participants, roomName, id }: RoomResponse) => {
       className="w-full"
       onClick={handleRoomClicked}
     >
-      <Card title={roomName}>
-        <p>{participants}</p>
-      </Card>
+      <ToggleableText value={roomName} id={id} />
     </Space>
   );
 };

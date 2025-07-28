@@ -5,14 +5,14 @@ import { RoomList } from "@/app/(components)/room/RoomList";
 import { Selection } from "@/app/(components)/Selection";
 import { CreateRoomDto } from "@/dtos/createRoomDto";
 import { GET_LIST_ROOMS } from "@/graphql/queries/room";
+import { RoomQueries } from "@/types/room";
 import { useQuery } from "@apollo/client";
 import { Button, Form, Input, message } from "antd";
 
 export default function SelectionPage() {
   const [form] = Form.useForm<CreateRoomDto>();
-  const { refetch } = useQuery(GET_LIST_ROOMS, {
-    skip: true,
-  });
+  const { refetch } = useQuery<RoomQueries>(GET_LIST_ROOMS, { skip: true });
+
   const handleSubmit = async (formData: CreateRoomDto) => {
     try {
       const result = await createRoom({
