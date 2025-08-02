@@ -1,26 +1,19 @@
-import { GET_LIST_ROOMS } from "@/graphql/queries/room";
-import { RoomQueries } from "@/types/room";
-import { useQuery } from "@apollo/client";
-import { Empty, Space, Spin } from "antd";
+import { RoomResponse } from "@/types/room";
+import { Empty, Space } from "antd";
 import { RoomListItem } from "./RoomListItem";
 
-export const RoomList = () => {
-  const { data, loading, error } = useQuery<RoomQueries>(GET_LIST_ROOMS);
+interface Props {
+  rooms?: RoomResponse[];
+}
 
-  if (loading) {
-    return <Spin />;
-  }
-  if (error) {
-    console.error("Query error:", error);
-    return <div>Error: {error.message}</div>;
-  }
-  if (!data?.getListRooms.length) {
+export const RoomList = ({ rooms }: Props) => {
+  if (!rooms) {
     return <Empty />;
   }
 
   return (
     <Space direction="horizontal" size="middle" wrap>
-      {data.getListRooms.map((room) => (
+      {rooms.map((room) => (
         <RoomListItem key={room.id} {...room} />
       ))}
     </Space>

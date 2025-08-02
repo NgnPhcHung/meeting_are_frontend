@@ -1,32 +1,11 @@
-// import { ApolloClient, InMemoryCache, HttpLink, from } from "@apollo/client";
-// import { cookies } from "next/headers";
-// import { registerApolloClient } from "@apollo/client-integration-nextjs";
-//
-// export const { getClient } = registerApolloClient(() => {
-//   const cookieStore = cookies();
-//   const authCookie = cookieStore.get("authorization");
-//
-//   const httpLink = new HttpLink({
-//     uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTP_ENDPOINT,
-//     credentials: "include",
-//     headers: {
-//       cookie: authCookie ? `authorization=${authCookie.value}` : "",
-//     },
-//   });
-//
-//   return new ApolloClient({
-//     cache: new InMemoryCache(),
-//     link: from([httpLink]),
-//   });
-// });
-
-import { ApolloClient, InMemoryCache, split } from "@apollo/client";
+import { ApolloClient, ApolloLink, InMemoryCache, split } from "@apollo/client";
 import { HttpLink } from "@apollo/client";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createClient } from "graphql-ws";
 import { cookies } from "next/headers";
 import { registerApolloClient } from "@apollo/client-integration-nextjs";
+import { graphQLError } from "./graphqlError";
 
 export const { getClient } = registerApolloClient(() => {
   const cookieStore = cookies();
@@ -64,9 +43,10 @@ export const { getClient } = registerApolloClient(() => {
     wsLink,
     httpLink,
   );
+  const link = ApolloLink.from([graphQLError, splitLink]);
 
   return new ApolloClient({
     cache: new InMemoryCache(),
-    link: splitLink,
+    link,
   });
 });

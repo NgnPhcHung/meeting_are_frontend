@@ -26,3 +26,9 @@ export const UPDATE_ROOM = gql`
   }
   ${ROOM_FIELDS}
 `;
+
+export const INVITE_TO_ROOM = gql`
+  mutation Room($input: InviteToRoomDto!) {
+    inviteToRoom(input: $input)
+  }
+`;

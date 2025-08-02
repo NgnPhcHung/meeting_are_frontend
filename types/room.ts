@@ -12,4 +12,5 @@ export interface RoomQueries {
 export interface RoomMutation {
   createRoom: RoomResponse;
   updateRoom: RoomResponse;
+  inviteToRoom: boolean;
 }

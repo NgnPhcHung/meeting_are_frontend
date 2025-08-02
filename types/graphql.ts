@@ -19,17 +19,20 @@ export enum HttpStatus {
 }
 
 export const ServerErrorCode = {
-  // Auth
-  "1000-0000": "Not Resource not found",
-  "1000-0001": "Unauthorized",
-  "1000-0002": "Username or password are not correct",
-  "1000-0003": "User name or password already taken",
-  "1000-0004": "Username or password are not correct",
-  "1000-0005": "Unauthorized",
-  "1000-0006": "Unauthorized",
-  "1000-0007": "Unauthorized",
-  "1000-0008": "Unauthorized",
-  "1000-0009": "Unauthorized",
+  "0000-0000": "App error",
+  "1000-0000": "Not found",
+  "1000-0001": "Invalid token",
+  "1000-0002": "Invalid user",
+  "1000-0003": "User already exists",
+  "1000-0004": "Invalid credentials",
+  "1000-0005": "Token is missing",
+  "1000-0006": "Blacklisted token",
+  "1000-0007": "Failed to decode auth",
+  "1000-0008": "Invalid credentials",
+  "1000-0009": "Invalid credentials",
+  "1000-0010": "Room already exists",
+  "1000-0011": "Max number of rooms reached",
+  "1000-0012": "Room does not exist",
 };
 
 export interface ServerException {
@@ -57,6 +60,7 @@ export interface GraphQLExtensions {
   code?: string;
   [key: string]: any;
 }
+
 export class GraphqlCustomError extends Error {
   public name: string = "GraphqlCustomError";
   public readonly details?: InnerServerExceptionDetails;
@@ -69,7 +73,7 @@ export class GraphqlCustomError extends Error {
     let message: string;
 
     if (details) {
-      if (details.errorCode && ServerErrorCode[details.errorCode]) {
+      if (details.errorCode) {
         message = ServerErrorCode[details.errorCode];
       } else if (details.message) {
         message = details.message;

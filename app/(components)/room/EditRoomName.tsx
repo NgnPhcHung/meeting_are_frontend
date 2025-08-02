@@ -10,9 +10,10 @@ import { ChangeEvent, MouseEvent, useState } from "react";
 interface Props {
   value: string;
   id: number;
+  more?: any;
 }
 
-export const ToggleableText = ({ value, id }: Props) => {
+export const EditRoomName = ({ value, id }: Props) => {
   const [isInput, setIsInput] = useState(false);
   const [changedValue, setChangedValue] = useState(value);
   const { refetch } = useQuery<RoomQueries>(GET_LIST_ROOMS, { skip: true });

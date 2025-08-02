@@ -29,7 +29,6 @@ function makeClient({ token }: { token?: string }) {
   const link = isBrowser
     ? ApolloLink.from([
         authLink,
-        graphQLError,
         split(
           ({ query }) => {
             const definition = getMainDefinition(query);
@@ -41,12 +40,13 @@ function makeClient({ token }: { token?: string }) {
           graphqlWsLink,
           graphqlHttpLink,
         ),
+        graphQLError,
       ])
     : ApolloLink.from([
         authLink,
-        graphQLError,
         new SSRMultipartLink({ stripDefer: true }),
         graphqlHttpLink,
+        graphQLError,
       ]);
 
   return new ApolloClient({

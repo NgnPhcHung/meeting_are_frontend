@@ -3,7 +3,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
-import { ThemeProvider } from "./(components)/ThemeProvider";
+import { ThemeProvider } from "./(components)/providers/ThemeProvider";
 import "./globals.css";
 
 const inter = Inter({
